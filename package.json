@@ -1,0 +1,71 @@
+{
+  "name": "@digitpop/monetization-sdk",
+  "version": "0.1.0",
+  "description": "DigitPop Web Monetization & Attention Gateway SDK for Publishers",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.mjs",
+      "require": "./dist/react/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "digitpop",
+    "monetization",
+    "watch-to-earn",
+    "attention-economy",
+    "paywall",
+    "popcoins",
+    "video-ads",
+    "sdk"
+  ],
+  "author": "Boggs Systems Corporation",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BoggsSystems/digitpop-web-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/BoggsSystems/digitpop-web-sdk/issues"
+  },
+  "homepage": "https://github.com/BoggsSystems/digitpop-web-sdk#readme",
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsup": "^8.0.2",
+    "typescript": "^5.5.2",
+    "vitest": "^1.6.0"
+  }
+}
