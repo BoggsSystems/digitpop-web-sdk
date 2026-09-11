@@ -1,6 +1,6 @@
 import {
   DigitPopClient
-} from "../chunk-AU75NI6H.mjs";
+} from "../chunk-XCZVSJMF.mjs";
 
 // src/react/DigitPopProvider.tsx
 import { createContext, useContext, useEffect, useMemo, useState } from "react";

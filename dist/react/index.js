@@ -53,7 +53,7 @@ var ApiClient = class {
   async getWalletBalance(userId) {
     const targetUser = userId || this.config.userId;
     try {
-      const url = `${this.baseUrl}/api/engagements/user-credits?userId=${encodeURIComponent(targetUser)}`;
+      const url = `${this.baseUrl}/api/engagement/user/${encodeURIComponent(targetUser)}`;
       const res = await fetch(url, {
         headers: {
           "X-DigitPop-Publisher-Key": this.config.publicKey
@@ -63,11 +63,12 @@ var ApiClient = class {
         throw new Error(`Failed to fetch wallet balance (HTTP ${res.status})`);
       }
       const data = await res.json();
+      const credits = data.user?.earnedCredits ?? data.earnedCredits ?? 0;
       return {
-        earnedCredits: data.earnedCredits || 0,
-        availableCredits: data.earnedCredits || 0,
-        attentionCredits: data.earnedCredits || 0,
-        popCoins: Math.floor((data.earnedCredits || 0) * 10),
+        earnedCredits: credits,
+        availableCredits: credits,
+        attentionCredits: credits,
+        popCoins: Math.floor(credits * 10),
         isCandidateAccount: true
       };
     } catch (err) {
@@ -85,7 +86,7 @@ var ApiClient = class {
    * Auto-provision or grant attention credit to user
    */
   async grantAttentionReward(options) {
-    const res = await fetch(`${this.baseUrl}/api/engagements/grant-credit`, {
+    const res = await fetch(`${this.baseUrl}/api/engagement/grant-credit`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -93,11 +94,13 @@ var ApiClient = class {
       },
       body: JSON.stringify({
         userId: options.userId,
-        email: this.config.userMetadata?.email,
+        userEmail: this.config.userMetadata?.email,
         candidateName: this.config.userMetadata?.fullName,
         credits: options.credits,
         publisherKey: this.config.publicKey,
-        videoId: options.videoId
+        videoId: options.videoId,
+        engagementType: "VIDEO_WATCH",
+        watchTimeSeconds: 30
       })
     });
     if (!res.ok) {
@@ -107,14 +110,14 @@ var ApiClient = class {
     const data = await res.json();
     return {
       success: true,
-      earnedCredits: data.data?.earnedCredits ?? data.earnedCredits ?? options.credits
+      earnedCredits: data.totalEarnedCredits ?? data.data?.earnedCredits ?? options.credits
     };
   }
   /**
    * Redeem PopCoin tokens for an access pass
    */
   async redeemTokens(options) {
-    const res = await fetch(`${this.baseUrl}/api/redemption/redeem`, {
+    const res = await fetch(`${this.baseUrl}/api/redemption/purchase-with-tokens`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -122,9 +125,9 @@ var ApiClient = class {
       },
       body: JSON.stringify({
         userId: options.userId,
-        amount: options.tokenAmount,
-        assetId: options.assetId,
-        publisherKey: this.config.publicKey
+        tokenCost: options.tokenAmount,
+        productId: options.assetId,
+        deliveryEmail: this.config.userMetadata?.email
       })
     });
     if (!res.ok) {
@@ -134,7 +137,7 @@ var ApiClient = class {
     const data = await res.json();
     return {
       success: true,
-      transactionId: data.transactionId || `tx_redeem_${Date.now()}`
+      transactionId: data.redemption?.id || data.transactionId || `tx_redeem_${Date.now()}`
     };
   }
 };

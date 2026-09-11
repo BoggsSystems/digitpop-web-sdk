@@ -29,7 +29,7 @@ export class ApiClient {
   async getWalletBalance(userId?: string): Promise<WalletBalance> {
     const targetUser = userId || this.config.userId;
     try {
-      const url = `${this.baseUrl}/api/engagements/user-credits?userId=${encodeURIComponent(targetUser)}`;
+      const url = `${this.baseUrl}/api/engagement/user/${encodeURIComponent(targetUser)}`;
       const res = await fetch(url, {
         headers: {
           'X-DigitPop-Publisher-Key': this.config.publicKey,
@@ -41,11 +41,12 @@ export class ApiClient {
       }
 
       const data = await res.json();
+      const credits = data.user?.earnedCredits ?? data.earnedCredits ?? 0;
       return {
-        earnedCredits: data.earnedCredits || 0,
-        availableCredits: data.earnedCredits || 0,
-        attentionCredits: data.earnedCredits || 0,
-        popCoins: Math.floor((data.earnedCredits || 0) * 10),
+        earnedCredits: credits,
+        availableCredits: credits,
+        attentionCredits: credits,
+        popCoins: Math.floor(credits * 10),
         isCandidateAccount: true,
       };
     } catch (err: any) {
@@ -68,7 +69,7 @@ export class ApiClient {
     credits: number;
     videoId?: string;
   }): Promise<{ success: boolean; earnedCredits: number }> {
-    const res = await fetch(`${this.baseUrl}/api/engagements/grant-credit`, {
+    const res = await fetch(`${this.baseUrl}/api/engagement/grant-credit`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -76,11 +77,13 @@ export class ApiClient {
       },
       body: JSON.stringify({
         userId: options.userId,
-        email: this.config.userMetadata?.email,
+        userEmail: this.config.userMetadata?.email,
         candidateName: this.config.userMetadata?.fullName,
         credits: options.credits,
         publisherKey: this.config.publicKey,
         videoId: options.videoId,
+        engagementType: 'VIDEO_WATCH',
+        watchTimeSeconds: 30.0,
       }),
     });
 
@@ -92,7 +95,7 @@ export class ApiClient {
     const data = await res.json();
     return {
       success: true,
-      earnedCredits: data.data?.earnedCredits ?? data.earnedCredits ?? options.credits,
+      earnedCredits: data.totalEarnedCredits ?? data.data?.earnedCredits ?? options.credits,
     };
   }
 
@@ -104,7 +107,7 @@ export class ApiClient {
     tokenAmount: number;
     assetId?: string;
   }): Promise<{ success: boolean; transactionId: string }> {
-    const res = await fetch(`${this.baseUrl}/api/redemption/redeem`, {
+    const res = await fetch(`${this.baseUrl}/api/redemption/purchase-with-tokens`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -112,9 +115,9 @@ export class ApiClient {
       },
       body: JSON.stringify({
         userId: options.userId,
-        amount: options.tokenAmount,
-        assetId: options.assetId,
-        publisherKey: this.config.publicKey,
+        tokenCost: options.tokenAmount,
+        productId: options.assetId,
+        deliveryEmail: this.config.userMetadata?.email,
       }),
     });
 
@@ -126,7 +129,7 @@ export class ApiClient {
     const data = await res.json();
     return {
       success: true,
-      transactionId: data.transactionId || `tx_redeem_${Date.now()}`,
+      transactionId: data.redemption?.id || data.transactionId || `tx_redeem_${Date.now()}`,
     };
   }
 }
