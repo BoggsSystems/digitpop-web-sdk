@@ -44,6 +44,24 @@ export class GatewayModal {
     if (e.key === 'Escape') {
       this.close();
     }
+    // Keyboard navigation in Quiz stage
+    if (this.currentStage === 'QUIZ' && this.currentQuiz?.options) {
+      const optionCount = this.currentQuiz.options.length;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        this.selectedQuizOption = this.selectedQuizOption === null ? 0 : (this.selectedQuizOption + 1) % optionCount;
+        this.quizError = null;
+        this.updateContent();
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        this.selectedQuizOption = this.selectedQuizOption === null ? optionCount - 1 : (this.selectedQuizOption - 1 + optionCount) % optionCount;
+        this.quizError = null;
+        this.updateContent();
+      } else if (e.key === 'Enter' && this.selectedQuizOption !== null) {
+        e.preventDefault();
+        this.submitQuizAnswer();
+      }
+    }
   };
 
   private handleVisibilityChange = () => {
@@ -53,11 +71,9 @@ export class GatewayModal {
       const statusElem = this.shadowRoot?.getElementById('watch-instruction');
       if (statusElem) {
         if (document.hidden) {
-          statusElem.innerText = '⚠️ Attention paused: Return to this tab to continue verifying stream.';
-          statusElem.style.color = '#f87171';
+          statusElem.innerHTML = '<span style="color: #ef4444; font-weight: 600;">⚠️ Stream Paused:</span> Return to this tab to continue verifying proof of attention.';
         } else {
-          statusElem.innerText = 'Please keep this window active to verify proof of attention.';
-          statusElem.style.color = '#94a3b8';
+          statusElem.innerText = 'Please keep this tab focused to verify proof-of-attention credits.';
         }
       }
     }
@@ -88,8 +104,8 @@ export class GatewayModal {
         ${this.getStyles()}
       </style>
       <div class="dp-backdrop" id="backdrop">
-        <div class="dp-modal" role="dialog" aria-modal="true">
-          <button class="dp-close" id="btn-close" aria-label="Close modal">&times;</button>
+        <div class="dp-modal" role="dialog" aria-modal="true" aria-labelledby="dp-modal-title">
+          <button class="dp-close" id="btn-close" aria-label="Close dialog">&times;</button>
           
           ${this.renderHeader()}
           ${this.renderBody()}
@@ -105,19 +121,31 @@ export class GatewayModal {
     if (this.currentStage === 'QUIZ') {
       return `
         <div class="dp-header">
-          <div class="dp-badge" style="color: #fbbf24; background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.25);">
-            Brand Comprehension Verification
+          <div class="dp-badge dp-badge-gold">
+            <span class="dp-icon-shield">🛡️</span> Cost-Per-Comprehension Gate
           </div>
-          <h2 class="dp-title">Verify Your Attention Takeaway</h2>
-          <p class="dp-subtitle">Answer the sponsor comprehension check to unlock candidate application credits.</p>
+          <h2 class="dp-title" id="dp-modal-title">Verify Brand Takeaway</h2>
+          <p class="dp-subtitle">Answer the sponsor comprehension check to unlock your candidate application pass.</p>
+        </div>
+      `;
+    }
+
+    if (this.currentStage === 'WATCHING') {
+      return `
+        <div class="dp-header">
+          <div class="dp-badge dp-badge-cyan">
+            <span class="dp-pulsing-dot-inline"></span> Proof of Elapsed Time Active
+          </div>
+          <h2 class="dp-title" id="dp-modal-title">Interactive Sponsor Experience</h2>
+          <p class="dp-subtitle">Sponsored by Tier-1 Enterprise Brands to unlock full Opportunity OS tools</p>
         </div>
       `;
     }
 
     return `
       <div class="dp-header">
-        <div class="dp-badge">DigitPop Attention Gateway</div>
-        <h2 class="dp-title">${this.options.title || 'Unlock Full System Access'}</h2>
+        <div class="dp-badge dp-badge-cyan">DigitPop Attention Clearinghouse</div>
+        <h2 class="dp-title" id="dp-modal-title">${this.options.title || 'Unlock Full System Access'}</h2>
         <p class="dp-subtitle">Select how you want to unlock candidate opportunities & AI tools</p>
       </div>
     `;
@@ -148,12 +176,12 @@ export class GatewayModal {
         </div>
 
         <!-- Option 2: Watch to Earn -->
-        <div class="dp-card dp-card-watch" id="opt-watch">
+        <div class="dp-card dp-card-watch dp-card-featured" id="opt-watch">
           <div class="dp-card-tag dp-tag-featured">Most Popular</div>
           <div class="dp-card-icon">📺</div>
           <h3 class="dp-card-title">Watch to Earn</h3>
           <div class="dp-card-price">100% Free<span class="dp-price-period">/ 30s Stream</span></div>
-          <p class="dp-card-desc">Watch an interactive enterprise sponsor clip to earn instant credits & unlock access.</p>
+          <p class="dp-card-desc">Watch an interactive enterprise sponsor masterclass to earn instant credits & unlock access.</p>
           <button class="dp-button dp-btn-blue" id="btn-start-watch">Watch Clip & Verify (Free)</button>
         </div>
 
@@ -175,23 +203,37 @@ export class GatewayModal {
     return `
       <div class="dp-watch-container">
         <div class="dp-watch-header">
-          <span class="dp-watch-status">Playing Sponsored Stream (Proof of Elapsed Time Active)</span>
+          <div class="dp-watch-meta">
+            <span class="dp-stream-tag">LIVE STREAM</span>
+            <span class="dp-sponsor-name">AWS Cloud & Graviton4</span>
+          </div>
           <span class="dp-watch-counter" id="timer-label">${remaining}s remaining</span>
         </div>
         <div class="dp-video-screen">
-          <div class="dp-video-overlay">
-            <div class="dp-pulsing-dot"></div>
-            <span>Proof of Attention Verified by DigitPop PoET Engine</span>
+          <div class="dp-video-top-bar">
+            <div class="dp-video-status">
+              <span class="dp-pulsing-dot"></span>
+              <span>Proof-of-Elapsed-Time Monitored</span>
+            </div>
+            <div class="dp-video-cert">🔒 SOC2 Vetted Supply</div>
           </div>
+          
           <div class="dp-sim-video">
-            <div class="dp-brand-watermark">ENTERPRISE SPONSOR</div>
-            <div class="dp-ad-title">DigitPop High-Fidelity Experience</div>
+            <div class="dp-brand-logo-pill">ENTERPRISE PARTNER SPONSOR</div>
+            <div class="dp-ad-title">AWS Graviton4 Next-Generation Cloud Compute</div>
+            <p class="dp-ad-tagline">Discover up to 40% better price-performance for cloud native architectures</p>
+            
             <div class="dp-progress-bar-container">
               <div class="dp-progress-bar-fill" id="progress-bar" style="width: ${this.watchProgress}%;"></div>
             </div>
           </div>
+
+          <div class="dp-video-bottom-bar">
+            <span>Single-Stream Concurrency Active</span>
+            <span>Zero-Skip Stream</span>
+          </div>
         </div>
-        <p class="dp-watch-instruction" id="watch-instruction">Please keep this window active to verify proof of attention.</p>
+        <p class="dp-watch-instruction" id="watch-instruction">Please keep this tab focused to verify proof-of-attention credits.</p>
       </div>
     `;
   }
@@ -211,17 +253,33 @@ export class GatewayModal {
       <div class="dp-quiz-container">
         ${this.quizError ? `<div class="dp-alert-error">${this.quizError}</div>` : ''}
         <div class="dp-quiz-card">
+          <div class="dp-quiz-banner">
+            <span>SPONSOR ATTENTION CHECK</span>
+            <span>+20 GrowthCredits</span>
+          </div>
           <h3 class="dp-quiz-question">${quiz.questionText}</h3>
-          <div class="dp-quiz-options">
+          
+          <div class="dp-quiz-options" role="radiogroup" aria-label="Quiz Options">
             ${quiz.options.map((opt: string, idx: number) => `
-              <label class="dp-quiz-option ${this.selectedQuizOption === idx ? 'dp-quiz-option-selected' : ''}" data-index="${idx}">
-                <input type="radio" name="quiz-answer" value="${idx}" ${this.selectedQuizOption === idx ? 'checked' : ''} style="display: none;" />
+              <div 
+                class="dp-quiz-option ${this.selectedQuizOption === idx ? 'dp-quiz-option-selected' : ''}" 
+                data-index="${idx}"
+                role="radio"
+                tabindex="0"
+                aria-checked="${this.selectedQuizOption === idx ? 'true' : 'false'}"
+              >
                 <span class="dp-quiz-bullet">${String.fromCharCode(65 + idx)}</span>
                 <span class="dp-quiz-text">${opt}</span>
-              </label>
+                <span class="dp-quiz-radio-indicator"></span>
+              </div>
             `).join('')}
           </div>
-          <button class="dp-button dp-btn-emerald" id="btn-submit-quiz" ${this.selectedQuizOption === null ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
+
+          <button 
+            class="dp-button dp-btn-emerald dp-btn-large" 
+            id="btn-submit-quiz" 
+            ${this.selectedQuizOption === null ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}
+          >
             Verify Comprehension & Claim Credits
           </button>
         </div>
@@ -232,10 +290,17 @@ export class GatewayModal {
   private renderSuccessStage(): string {
     return `
       <div class="dp-success-container">
-        <div class="dp-success-icon">🎉</div>
-        <h3 class="dp-success-title">Attention & Comprehension Verified!</h3>
-        <p class="dp-success-desc">Your candidate attention credits have been verified by the DigitPop clearinghouse and applied to Opportunity OS.</p>
-        <button class="dp-button dp-btn-emerald" id="btn-success-continue">Continue to Application</button>
+        <div class="dp-success-glow">
+          <div class="dp-success-icon">🎉</div>
+        </div>
+        <h3 class="dp-success-title">Comprehension Verified!</h3>
+        <p class="dp-success-desc">
+          Your attention credits have been certified by the DigitPop clearinghouse and deposited into your Opportunity OS candidate account.
+        </p>
+        <div class="dp-success-reward-pill">
+          <span class="dp-reward-val">+20</span> Opportunity OS Application Credits
+        </div>
+        <button class="dp-button dp-btn-emerald dp-btn-large" id="btn-success-continue">Continue to Opportunity OS</button>
       </div>
     `;
   }
@@ -243,8 +308,15 @@ export class GatewayModal {
   private renderFooter(): string {
     return `
       <div class="dp-footer">
-        <span>Powered by <strong style="color: #60a5fa;">DigitPop Proof-of-Attention Clearinghouse</strong></span>
-        <span>Corporate Vetted Supply Network</span>
+        <span class="dp-footer-left">
+          <span>Powered by </span>
+          <strong style="color: #38bdf8;">DigitPop Proof-of-Attention Clearinghouse</strong>
+        </span>
+        <span class="dp-footer-right">
+          <span>🔒 Vetted Corporate Consortium</span>
+          <span>•</span>
+          <span>Zero-Fraud SLA</span>
+        </span>
       </div>
     `;
   }
@@ -289,7 +361,7 @@ export class GatewayModal {
       btnSuccess.addEventListener('click', () => this.close());
     }
 
-    // Quiz Options Click
+    // Quiz Options Selection
     const optionCards = this.shadowRoot.querySelectorAll('.dp-quiz-option');
     optionCards.forEach((card) => {
       card.addEventListener('click', () => {
@@ -297,6 +369,15 @@ export class GatewayModal {
         this.selectedQuizOption = idx;
         this.quizError = null;
         this.updateContent();
+      });
+      card.addEventListener('keydown', (e: any) => {
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          const idx = parseInt(card.getAttribute('data-index') || '0', 10);
+          this.selectedQuizOption = idx;
+          this.quizError = null;
+          this.updateContent();
+        }
       });
     });
 
@@ -309,10 +390,9 @@ export class GatewayModal {
   private async startWatching(): Promise<void> {
     try {
       this.rateLimitWarning = null;
-      // Connect WebSocket stream
       this.client.ws.connect();
 
-      // Initiate PoET challenge on server
+      // Initiate server PoET challenge
       const challenge = await this.client.startAttentionChallenge();
       this.challengeToken = challenge.challengeToken;
       this.currentQuiz = challenge.quiz;
@@ -328,7 +408,7 @@ export class GatewayModal {
       this.runWatchTimer();
     } catch (err: any) {
       if (err.code === 'ACTIVE_ATTENTION_STREAM_IN_PROGRESS') {
-        this.rateLimitWarning = `⚠️ Concurrency Lock: Active attention stream in progress (${err.remainingSeconds || 15}s remaining). Please finish it before starting another.`;
+        this.rateLimitWarning = `⚠️ Concurrency Lock: Active attention stream in progress (${err.remainingSeconds || 15}s remaining). Please finish it before opening another.`;
       } else {
         this.rateLimitWarning = `⚠️ ${err.message || 'Failed to initiate attention challenge.'}`;
       }
@@ -340,9 +420,8 @@ export class GatewayModal {
     if (this.watchTimer) clearInterval(this.watchTimer);
 
     this.watchTimer = setInterval(() => {
-      // If user switched tabs, halt progress
       if (this.isTabHidden) {
-        return;
+        return; // Halt progress while blurred
       }
 
       this.elapsedSeconds += 0.5;
@@ -362,7 +441,6 @@ export class GatewayModal {
       if (this.elapsedSeconds >= this.durationSeconds) {
         clearInterval(this.watchTimer);
         this.watchTimer = null;
-        // Transition to brand comprehension quiz
         this.currentStage = 'QUIZ';
         this.updateContent();
       }
@@ -444,140 +522,165 @@ export class GatewayModal {
       .dp-backdrop {
         position: fixed;
         inset: 0;
-        background: rgba(2, 6, 23, 0.85);
-        backdrop-filter: blur(8px);
+        background: rgba(4, 8, 16, 0.88);
+        backdrop-filter: blur(16px);
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 999999;
-        padding: 16px;
+        padding: 20px;
       }
       .dp-modal {
         position: relative;
-        background: #090d16;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 20px;
+        background: linear-gradient(145deg, #0d1322, #070a12);
+        border: 1px solid rgba(56, 189, 248, 0.18);
+        border-radius: 24px;
         width: 100%;
-        max-width: 820px;
-        padding: 32px;
+        max-width: 840px;
+        padding: 36px 40px;
         color: #f3f4f6;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-        animation: dp-fade-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: 0 30px 70px -15px rgba(0, 0, 0, 0.85), 0 0 50px -10px rgba(56, 189, 248, 0.12);
+        animation: dp-fade-in 0.28s cubic-bezier(0.16, 1, 0.3, 1);
       }
       @keyframes dp-fade-in {
-        from { opacity: 0; transform: scale(0.96) translateY(10px); }
+        from { opacity: 0; transform: scale(0.95) translateY(12px); }
         to { opacity: 1; transform: scale(1) translateY(0); }
       }
       .dp-close {
         position: absolute;
-        top: 18px;
-        right: 20px;
-        background: none;
-        border: none;
+        top: 20px;
+        right: 24px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
         color: #9ca3af;
-        font-size: 28px;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         cursor: pointer;
         line-height: 1;
-        transition: color 0.15s;
+        transition: all 0.15s ease;
       }
       .dp-close:hover {
+        background: rgba(255, 255, 255, 0.15);
         color: #fff;
+        transform: rotate(90deg);
       }
       .dp-header {
         text-align: center;
         margin-bottom: 28px;
       }
       .dp-badge {
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.08em;
         font-weight: 700;
+        padding: 5px 12px;
+        border-radius: 9999px;
+        margin-bottom: 10px;
+      }
+      .dp-badge-cyan {
         color: #38bdf8;
         background: rgba(56, 189, 248, 0.12);
         border: 1px solid rgba(56, 189, 248, 0.25);
-        padding: 4px 10px;
-        border-radius: 9999px;
-        margin-bottom: 8px;
+      }
+      .dp-badge-gold {
+        color: #fbbf24;
+        background: rgba(251, 191, 36, 0.12);
+        border: 1px solid rgba(251, 191, 36, 0.25);
       }
       .dp-title {
-        font-size: 24px;
-        font-weight: 700;
-        letter-spacing: -0.02em;
-        color: #fff;
-        margin-bottom: 6px;
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        color: #ffffff;
+        margin-bottom: 8px;
       }
       .dp-subtitle {
         font-size: 14px;
         color: #94a3b8;
+        max-width: 580px;
+        margin: 0 auto;
+        line-height: 1.5;
       }
       .dp-alert-warning {
-        background: rgba(245, 158, 11, 0.15);
+        background: rgba(245, 158, 11, 0.12);
         border: 1px solid rgba(245, 158, 11, 0.3);
         color: #fbbf24;
-        padding: 10px 14px;
-        border-radius: 8px;
+        padding: 12px 16px;
+        border-radius: 12px;
         font-size: 13px;
-        margin-bottom: 16px;
+        margin-bottom: 20px;
       }
       .dp-alert-error {
-        background: rgba(239, 68, 68, 0.15);
+        background: rgba(239, 68, 68, 0.12);
         border: 1px solid rgba(239, 68, 68, 0.3);
         color: #f87171;
-        padding: 10px 14px;
-        border-radius: 8px;
+        padding: 12px 16px;
+        border-radius: 12px;
         font-size: 13px;
-        margin-bottom: 16px;
+        margin-bottom: 20px;
       }
       .dp-options-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 16px;
-        margin-bottom: 24px;
+        gap: 18px;
+        margin-bottom: 28px;
       }
       .dp-card {
-        background: rgba(15, 23, 42, 0.6);
+        background: rgba(15, 23, 42, 0.65);
         border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 14px;
-        padding: 20px;
+        border-radius: 16px;
+        padding: 24px;
         display: flex;
         flex-direction: column;
         position: relative;
-        transition: transform 0.2s, border-color 0.2s;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       }
       .dp-card:hover {
-        transform: translateY(-2px);
-        border-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-3px);
+        border-color: rgba(56, 189, 248, 0.35);
+        box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.5);
+      }
+      .dp-card-featured {
+        background: linear-gradient(180deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.8));
+        border-color: rgba(56, 189, 248, 0.3);
       }
       .dp-card-tag {
         font-size: 10px;
         font-weight: 700;
         text-transform: uppercase;
         color: #94a3b8;
-        margin-bottom: 12px;
+        margin-bottom: 14px;
       }
       .dp-tag-featured {
-        color: #60a5fa;
+        color: #38bdf8;
       }
       .dp-card-icon {
         font-size: 32px;
-        margin-bottom: 8px;
+        margin-bottom: 12px;
       }
       .dp-card-title {
-        font-size: 16px;
-        font-weight: 600;
-        color: #fff;
-        margin-bottom: 6px;
-      }
-      .dp-card-price {
-        font-size: 20px;
-        font-weight: 800;
+        font-size: 17px;
+        font-weight: 700;
         color: #fff;
         margin-bottom: 8px;
+      }
+      .dp-card-price {
+        font-size: 22px;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 10px;
       }
       .dp-price-period {
         font-size: 12px;
-        font-weight: 400;
+        font-weight: 500;
         color: #94a3b8;
         margin-left: 4px;
       }
@@ -585,159 +688,224 @@ export class GatewayModal {
         font-size: 12px;
         color: #94a3b8;
         line-height: 1.5;
-        margin-bottom: 16px;
+        margin-bottom: 20px;
         flex-grow: 1;
       }
       .dp-button {
         width: 100%;
-        padding: 10px 14px;
-        border-radius: 8px;
+        padding: 12px 18px;
+        border-radius: 10px;
         font-size: 13px;
-        font-weight: 600;
+        font-weight: 700;
         cursor: pointer;
         border: none;
-        transition: filter 0.15s;
+        transition: all 0.15s ease;
       }
-      .dp-button:hover {
-        filter: brightness(1.1);
+      .dp-btn-large {
+        padding: 14px 20px;
+        font-size: 14px;
+      }
+      .dp-button:hover:not(:disabled) {
+        filter: brightness(1.12);
+        transform: translateY(-1px);
       }
       .dp-btn-emerald {
-        background: #10b981;
+        background: linear-gradient(90deg, #10b981, #059669);
         color: #fff;
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
       }
       .dp-btn-blue {
-        background: #2563eb;
+        background: linear-gradient(90deg, #2563eb, #38bdf8);
         color: #fff;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
       }
       .dp-btn-purple {
-        background: #7c3aed;
+        background: linear-gradient(90deg, #7c3aed, #9333ea);
         color: #fff;
       }
       .dp-watch-container {
-        padding: 16px;
+        padding: 8px 12px;
         text-align: center;
       }
       .dp-watch-header {
         display: flex;
         justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+      }
+      .dp-watch-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .dp-stream-tag {
+        font-size: 10px;
+        font-weight: 800;
+        color: #ef4444;
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        padding: 2px 8px;
+        border-radius: 4px;
+        letter-spacing: 0.05em;
+      }
+      .dp-sponsor-name {
         font-size: 13px;
         font-weight: 600;
-        color: #94a3b8;
-        margin-bottom: 12px;
+        color: #e2e8f0;
+      }
+      .dp-watch-counter {
+        font-size: 13px;
+        font-weight: 700;
+        color: #38bdf8;
       }
       .dp-video-screen {
-        background: #020617;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        height: 240px;
+        background: #02040a;
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        border-radius: 16px;
+        min-height: 260px;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        padding: 16px;
+        padding: 20px;
         position: relative;
         overflow: hidden;
       }
-      .dp-video-overlay {
+      .dp-video-top-bar, .dp-video-bottom-bar {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        color: #64748b;
+      }
+      .dp-video-status {
         display: flex;
         align-items: center;
         gap: 8px;
-        font-size: 11px;
         color: #34d399;
+        font-weight: 600;
       }
       .dp-pulsing-dot {
         width: 8px;
         height: 8px;
         background: #10b981;
         border-radius: 50%;
-        box-shadow: 0 0 8px #10b981;
+        box-shadow: 0 0 10px #10b981;
+        animation: dp-pulse 1.5s infinite;
+      }
+      .dp-pulsing-dot-inline {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        background: #38bdf8;
+        border-radius: 50%;
         animation: dp-pulse 1.5s infinite;
       }
       @keyframes dp-pulse {
-        0% { transform: scale(0.9); opacity: 0.7; }
+        0% { transform: scale(0.9); opacity: 0.6; }
         50% { transform: scale(1.3); opacity: 1; }
-        100% { transform: scale(0.9); opacity: 0.7; }
+        100% { transform: scale(0.9); opacity: 0.6; }
       }
-      .dp-brand-watermark {
-        font-size: 11px;
-        color: #64748b;
-        letter-spacing: 0.05em;
+      .dp-brand-logo-pill {
+        display: inline-block;
+        font-size: 10px;
         font-weight: 700;
+        letter-spacing: 0.08em;
+        color: #94a3b8;
+        background: rgba(255, 255, 255, 0.06);
+        padding: 4px 10px;
+        border-radius: 999px;
+        margin-top: 16px;
       }
       .dp-ad-title {
-        font-size: 18px;
-        font-weight: 700;
-        color: #fff;
-        margin-top: 24px;
+        font-size: 20px;
+        font-weight: 800;
+        color: #ffffff;
+        margin-top: 12px;
+        margin-bottom: 6px;
+        letter-spacing: -0.01em;
+      }
+      .dp-ad-tagline {
+        font-size: 13px;
+        color: #94a3b8;
         margin-bottom: 24px;
       }
       .dp-progress-bar-container {
         width: 100%;
-        height: 6px;
+        height: 8px;
         background: rgba(255, 255, 255, 0.1);
         border-radius: 999px;
         overflow: hidden;
       }
       .dp-progress-bar-fill {
         height: 100%;
-        background: linear-gradient(90deg, #2563eb, #38bdf8);
-        transition: width 0.4s ease;
+        background: linear-gradient(90deg, #2563eb, #38bdf8, #10b981);
+        transition: width 0.35s ease;
       }
       .dp-watch-instruction {
-        margin-top: 12px;
-        font-size: 12px;
+        margin-top: 14px;
+        font-size: 13px;
         color: #64748b;
       }
       .dp-quiz-container {
-        padding: 8px 16px 20px;
+        padding: 8px 12px 16px;
       }
       .dp-quiz-card {
         background: rgba(15, 23, 42, 0.7);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 14px;
-        padding: 24px;
+        border-radius: 18px;
+        padding: 28px;
+      }
+      .dp-quiz-banner {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        font-weight: 700;
+        color: #fbbf24;
+        margin-bottom: 14px;
+        letter-spacing: 0.05em;
       }
       .dp-quiz-question {
-        font-size: 16px;
-        font-weight: 600;
+        font-size: 17px;
+        font-weight: 700;
         color: #fff;
-        margin-bottom: 18px;
-        line-height: 1.4;
+        margin-bottom: 22px;
+        line-height: 1.45;
       }
       .dp-quiz-options {
         display: flex;
         flex-direction: column;
-        gap: 10px;
-        margin-bottom: 20px;
+        gap: 12px;
+        margin-bottom: 24px;
       }
       .dp-quiz-option {
         display: flex;
         align-items: center;
-        gap: 12px;
-        background: rgba(30, 41, 59, 0.5);
+        gap: 14px;
+        background: rgba(30, 41, 59, 0.55);
         border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 10px;
-        padding: 12px 16px;
+        border-radius: 12px;
+        padding: 14px 18px;
         cursor: pointer;
-        transition: border-color 0.15s, background 0.15s;
+        transition: all 0.18s ease;
       }
       .dp-quiz-option:hover {
-        background: rgba(30, 41, 59, 0.8);
-        border-color: rgba(255, 255, 255, 0.2);
+        background: rgba(30, 41, 59, 0.85);
+        border-color: rgba(56, 189, 248, 0.3);
       }
       .dp-quiz-option-selected {
-        background: rgba(37, 99, 235, 0.2) !important;
-        border-color: #3b82f6 !important;
+        background: rgba(37, 99, 235, 0.22) !important;
+        border-color: #38bdf8 !important;
+        box-shadow: 0 0 16px -3px rgba(56, 189, 248, 0.35);
       }
       .dp-quiz-bullet {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 24px;
-        height: 24px;
-        border-radius: 6px;
-        background: rgba(255, 255, 255, 0.1);
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.08);
         font-size: 12px;
-        font-weight: 700;
+        font-weight: 800;
         color: #cbd5e1;
       }
       .dp-quiz-option-selected .dp-quiz-bullet {
@@ -745,35 +913,83 @@ export class GatewayModal {
         color: #fff;
       }
       .dp-quiz-text {
-        font-size: 13px;
+        font-size: 13.5px;
         color: #e2e8f0;
+        flex-grow: 1;
+        line-height: 1.4;
+      }
+      .dp-quiz-radio-indicator {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        display: inline-block;
+      }
+      .dp-quiz-option-selected .dp-quiz-radio-indicator {
+        border-color: #38bdf8;
+        background: radial-gradient(circle, #38bdf8 45%, transparent 50%);
       }
       .dp-success-container {
         text-align: center;
-        padding: 32px 16px;
+        padding: 40px 20px;
+      }
+      .dp-success-glow {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 84px;
+        height: 84px;
+        border-radius: 50%;
+        background: rgba(16, 185, 129, 0.12);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        margin-bottom: 18px;
+        box-shadow: 0 0 30px rgba(16, 185, 129, 0.25);
       }
       .dp-success-icon {
-        font-size: 48px;
-        margin-bottom: 12px;
+        font-size: 40px;
       }
       .dp-success-title {
-        font-size: 20px;
-        font-weight: 700;
+        font-size: 24px;
+        font-weight: 800;
         color: #34d399;
-        margin-bottom: 8px;
+        margin-bottom: 10px;
       }
       .dp-success-desc {
-        font-size: 13px;
+        font-size: 14px;
         color: #94a3b8;
-        margin-bottom: 20px;
+        max-width: 480px;
+        margin: 0 auto 24px;
+        line-height: 1.5;
+      }
+      .dp-success-reward-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.25);
+        color: #e2e8f0;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 8px 18px;
+        border-radius: 999px;
+        margin-bottom: 28px;
+      }
+      .dp-reward-val {
+        color: #34d399;
+        font-weight: 800;
       }
       .dp-footer {
         display: flex;
         justify-content: space-between;
+        align-items: center;
         font-size: 11px;
         color: #64748b;
-        border-top: 1px solid rgba(255, 255, 255, 0.06);
-        padding-top: 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        padding-top: 20px;
+      }
+      .dp-footer-right {
+        display: flex;
+        gap: 8px;
       }
     `;
   }
