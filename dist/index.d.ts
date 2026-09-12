@@ -1,5 +1,5 @@
-import { D as DigitPopConfig, a as DigitPopClient } from './DigitPopClient-0kWT_Tmt.js';
-export { A as AccessGrantedEvent, b as ApiClient, c as DigitPopTheme, d as DirectPaymentConfig, G as GatewayModal, M as MonetizationOption, e as MonetizationOptionType, O as OpenGatewayOptions, P as PublisherVerification, R as RewardCreditEvent, T as TokenRedemptionConfig, V as VideoEngagementConfig, W as WalletBalance, f as WebSocketClient } from './DigitPopClient-0kWT_Tmt.js';
+import { D as DigitPopConfig, a as DigitPopClient } from './DigitPopClient-DIASkMHd.js';
+export { A as AccessGrantedEvent, b as ApiClient, c as AttentionChallengeQuiz, d as AttentionChallengeStartResponse, e as AttentionChallengeVerifyResponse, f as DigitPopTheme, g as DirectPaymentConfig, G as GatewayModal, M as MonetizationOption, h as MonetizationOptionType, O as OpenGatewayOptions, P as PublisherVerification, R as RewardCreditEvent, T as TokenRedemptionConfig, V as VideoEngagementConfig, W as WalletBalance, i as WebSocketClient } from './DigitPopClient-DIASkMHd.js';
 
 /**
  * Convenient factory function to instantiate and initialize the DigitPop SDK

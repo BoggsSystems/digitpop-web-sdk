@@ -3,7 +3,7 @@ import {
   DigitPopClient,
   GatewayModal,
   WebSocketClient
-} from "./chunk-XCZVSJMF.mjs";
+} from "./chunk-ZRRAVYRJ.mjs";
 
 // src/index.ts
 function createDigitPop(config) {

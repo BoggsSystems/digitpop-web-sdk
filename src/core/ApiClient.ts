@@ -132,4 +132,65 @@ export class ApiClient {
       transactionId: data.redemption?.id || data.transactionId || `tx_redeem_${Date.now()}`,
     };
   }
+
+  /**
+   * Initiate a server-signed Proof of Elapsed Time (PoET) Attention Challenge
+   */
+  async startAttentionChallenge(durationSeconds?: number): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/api/engagement/challenge/start`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-DigitPop-Publisher-Key': this.config.publicKey,
+      },
+      body: JSON.stringify({
+        userId: this.config.userId,
+        userEmail: this.config.userMetadata?.email,
+        durationSeconds,
+        publisherKey: this.config.publicKey,
+      }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const error: any = new Error(data.message || `Failed to initiate attention challenge (HTTP ${res.status})`);
+      error.code = data.code;
+      error.remainingSeconds = data.remainingSeconds;
+      throw error;
+    }
+
+    return data;
+  }
+
+  /**
+   * Submit Proof of Elapsed Time & Brand Comprehension Answer for verified reward
+   */
+  async verifyComprehension(options: {
+    challengeToken: string;
+    selectedOptionIndex: number;
+    clientTelemetry?: any;
+  }): Promise<any> {
+    const res = await fetch(`${this.baseUrl}/api/engagement/challenge/verify`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-DigitPop-Publisher-Key': this.config.publicKey,
+      },
+      body: JSON.stringify({
+        challengeToken: options.challengeToken,
+        selectedOptionIndex: options.selectedOptionIndex,
+        clientTelemetry: options.clientTelemetry,
+      }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const error: any = new Error(data.message || `Attention comprehension verification failed (HTTP ${res.status})`);
+      error.code = data.code;
+      error.explanation = data.explanation;
+      throw error;
+    }
+
+    return data;
+  }
 }

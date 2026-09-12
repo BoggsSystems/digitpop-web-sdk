@@ -6,22 +6,21 @@ export class GatewayModal {
   private options: OpenGatewayOptions;
   private hostElement: HTMLElement | null = null;
   private shadowRoot: ShadowRoot | null = null;
-  private currentStage: 'SELECTION' | 'WATCHING' | 'SUCCESS' = 'SELECTION';
-  private watchedVideos: number = 0;
-  private requiredVideos: number = 2;
-  private creditsPerWatch: number = 10;
+  private currentStage: 'SELECTION' | 'WATCHING' | 'QUIZ' | 'SUCCESS' = 'SELECTION';
   private watchTimer: any = null;
   private watchProgress: number = 0;
+  private durationSeconds: number = 30;
+  private elapsedSeconds: number = 0;
+  private isTabHidden: boolean = false;
+  private challengeToken: string | null = null;
+  private currentQuiz: any = null;
+  private selectedQuizOption: number | null = null;
+  private quizError: string | null = null;
+  private rateLimitWarning: string | null = null;
 
   constructor(client: DigitPopClient, options: OpenGatewayOptions) {
     this.client = client;
     this.options = options;
-
-    const videoOpt = options.monetizationOptions?.find((o) => o.type === 'VIDEO_ENGAGEMENT');
-    if (videoOpt && videoOpt.type === 'VIDEO_ENGAGEMENT') {
-      this.requiredVideos = videoOpt.requiredVideos || 2;
-      this.creditsPerWatch = videoOpt.creditsPerWatch || 10;
-    }
   }
 
   public render(): void {
@@ -36,13 +35,31 @@ export class GatewayModal {
     document.body.appendChild(this.hostElement);
     this.updateContent();
 
-    // Attach Escape key handler
+    // Attach Event Listeners
     window.addEventListener('keydown', this.handleKeyDown);
+    document.addEventListener('visibilitychange', this.handleVisibilityChange);
   }
 
   private handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       this.close();
+    }
+  };
+
+  private handleVisibilityChange = () => {
+    if (typeof document === 'undefined') return;
+    this.isTabHidden = document.hidden;
+    if (this.currentStage === 'WATCHING') {
+      const statusElem = this.shadowRoot?.getElementById('watch-instruction');
+      if (statusElem) {
+        if (document.hidden) {
+          statusElem.innerText = '⚠️ Attention paused: Return to this tab to continue verifying stream.';
+          statusElem.style.color = '#f87171';
+        } else {
+          statusElem.innerText = 'Please keep this window active to verify proof of attention.';
+          statusElem.style.color = '#94a3b8';
+        }
+      }
     }
   };
 
@@ -52,6 +69,8 @@ export class GatewayModal {
       this.watchTimer = null;
     }
     window.removeEventListener('keydown', this.handleKeyDown);
+    document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+
     if (this.hostElement && this.hostElement.parentNode) {
       this.hostElement.parentNode.removeChild(this.hostElement);
     }
@@ -83,6 +102,18 @@ export class GatewayModal {
   }
 
   private renderHeader(): string {
+    if (this.currentStage === 'QUIZ') {
+      return `
+        <div class="dp-header">
+          <div class="dp-badge" style="color: #fbbf24; background: rgba(251, 191, 36, 0.12); border-color: rgba(251, 191, 36, 0.25);">
+            Brand Comprehension Verification
+          </div>
+          <h2 class="dp-title">Verify Your Attention Takeaway</h2>
+          <p class="dp-subtitle">Answer the sponsor comprehension check to unlock candidate application credits.</p>
+        </div>
+      `;
+    }
+
     return `
       <div class="dp-header">
         <div class="dp-badge">DigitPop Attention Gateway</div>
@@ -96,11 +127,15 @@ export class GatewayModal {
     if (this.currentStage === 'WATCHING') {
       return this.renderWatchingStage();
     }
+    if (this.currentStage === 'QUIZ') {
+      return this.renderQuizStage();
+    }
     if (this.currentStage === 'SUCCESS') {
       return this.renderSuccessStage();
     }
 
     return `
+      ${this.rateLimitWarning ? `<div class="dp-alert-warning">${this.rateLimitWarning}</div>` : ''}
       <div class="dp-options-grid">
         <!-- Option 1: Direct Payment -->
         <div class="dp-card dp-card-payment" id="opt-payment">
@@ -117,9 +152,9 @@ export class GatewayModal {
           <div class="dp-card-tag dp-tag-featured">Most Popular</div>
           <div class="dp-card-icon">📺</div>
           <h3 class="dp-card-title">Watch to Earn</h3>
-          <div class="dp-card-price">100% Free<span class="dp-price-period">/ 2 Clips</span></div>
-          <p class="dp-card-desc">Watch 2 short interactive partner clips to earn instant credits & unlock access.</p>
-          <button class="dp-button dp-btn-blue" id="btn-start-watch">Watch Clips (Free)</button>
+          <div class="dp-card-price">100% Free<span class="dp-price-period">/ 30s Stream</span></div>
+          <p class="dp-card-desc">Watch an interactive enterprise sponsor clip to earn instant credits & unlock access.</p>
+          <button class="dp-button dp-btn-blue" id="btn-start-watch">Watch Clip & Verify (Free)</button>
         </div>
 
         <!-- Option 3: Token Redemption -->
@@ -136,26 +171,60 @@ export class GatewayModal {
   }
 
   private renderWatchingStage(): string {
+    const remaining = Math.max(0, Math.ceil(this.durationSeconds - this.elapsedSeconds));
     return `
       <div class="dp-watch-container">
         <div class="dp-watch-header">
-          <span class="dp-watch-status">Playing Sponsored Stream (${this.watchedVideos + 1} of ${this.requiredVideos})</span>
-          <span class="dp-watch-counter" id="timer-label">15s remaining</span>
+          <span class="dp-watch-status">Playing Sponsored Stream (Proof of Elapsed Time Active)</span>
+          <span class="dp-watch-counter" id="timer-label">${remaining}s remaining</span>
         </div>
         <div class="dp-video-screen">
           <div class="dp-video-overlay">
             <div class="dp-pulsing-dot"></div>
-            <span>Proof of Attention Verified by DigitPop</span>
+            <span>Proof of Attention Verified by DigitPop PoET Engine</span>
           </div>
           <div class="dp-sim-video">
-            <div class="dp-brand-watermark">PARTNER SPONSOR</div>
-            <div class="dp-ad-title">DigitPop Interactive Experience</div>
+            <div class="dp-brand-watermark">ENTERPRISE SPONSOR</div>
+            <div class="dp-ad-title">DigitPop High-Fidelity Experience</div>
             <div class="dp-progress-bar-container">
               <div class="dp-progress-bar-fill" id="progress-bar" style="width: ${this.watchProgress}%;"></div>
             </div>
           </div>
         </div>
-        <p class="dp-watch-instruction">Please keep this window active to verify attention credits.</p>
+        <p class="dp-watch-instruction" id="watch-instruction">Please keep this window active to verify proof of attention.</p>
+      </div>
+    `;
+  }
+
+  private renderQuizStage(): string {
+    const quiz = this.currentQuiz || {
+      questionText: 'What is the primary benefit of AWS Graviton processors for cloud workloads?',
+      options: [
+        'Up to 40% better price-performance over comparable x86 processors',
+        'Manual server patching required every week',
+        'Higher energy consumption in data centers',
+        'Incompatibility with Linux environments'
+      ]
+    };
+
+    return `
+      <div class="dp-quiz-container">
+        ${this.quizError ? `<div class="dp-alert-error">${this.quizError}</div>` : ''}
+        <div class="dp-quiz-card">
+          <h3 class="dp-quiz-question">${quiz.questionText}</h3>
+          <div class="dp-quiz-options">
+            ${quiz.options.map((opt: string, idx: number) => `
+              <label class="dp-quiz-option ${this.selectedQuizOption === idx ? 'dp-quiz-option-selected' : ''}" data-index="${idx}">
+                <input type="radio" name="quiz-answer" value="${idx}" ${this.selectedQuizOption === idx ? 'checked' : ''} style="display: none;" />
+                <span class="dp-quiz-bullet">${String.fromCharCode(65 + idx)}</span>
+                <span class="dp-quiz-text">${opt}</span>
+              </label>
+            `).join('')}
+          </div>
+          <button class="dp-button dp-btn-emerald" id="btn-submit-quiz" ${this.selectedQuizOption === null ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>
+            Verify Comprehension & Claim Credits
+          </button>
+        </div>
       </div>
     `;
   }
@@ -164,8 +233,8 @@ export class GatewayModal {
     return `
       <div class="dp-success-container">
         <div class="dp-success-icon">🎉</div>
-        <h3 class="dp-success-title">Access Granted!</h3>
-        <p class="dp-success-desc">Your candidate attention credits have been verified and applied to your account.</p>
+        <h3 class="dp-success-title">Attention & Comprehension Verified!</h3>
+        <p class="dp-success-desc">Your candidate attention credits have been verified by the DigitPop clearinghouse and applied to Opportunity OS.</p>
         <button class="dp-button dp-btn-emerald" id="btn-success-continue">Continue to Application</button>
       </div>
     `;
@@ -174,8 +243,8 @@ export class GatewayModal {
   private renderFooter(): string {
     return `
       <div class="dp-footer">
-        <span>Powered by <strong style="color: #60a5fa;">DigitPop Attention Platform</strong></span>
-        <span>Secure & Anonymous</span>
+        <span>Powered by <strong style="color: #60a5fa;">DigitPop Proof-of-Attention Clearinghouse</strong></span>
+        <span>Corporate Vetted Supply Network</span>
       </div>
     `;
   }
@@ -219,22 +288,65 @@ export class GatewayModal {
     if (btnSuccess) {
       btnSuccess.addEventListener('click', () => this.close());
     }
+
+    // Quiz Options Click
+    const optionCards = this.shadowRoot.querySelectorAll('.dp-quiz-option');
+    optionCards.forEach((card) => {
+      card.addEventListener('click', () => {
+        const idx = parseInt(card.getAttribute('data-index') || '0', 10);
+        this.selectedQuizOption = idx;
+        this.quizError = null;
+        this.updateContent();
+      });
+    });
+
+    const btnSubmitQuiz = this.shadowRoot.getElementById('btn-submit-quiz');
+    if (btnSubmitQuiz) {
+      btnSubmitQuiz.addEventListener('click', () => this.submitQuizAnswer());
+    }
   }
 
   private async startWatching(): Promise<void> {
-    this.currentStage = 'WATCHING';
-    this.watchProgress = 0;
-    this.updateContent();
+    try {
+      this.rateLimitWarning = null;
+      // Connect WebSocket stream
+      this.client.ws.connect();
 
-    // Connect WebSocket stream
-    this.client.ws.connect();
+      // Initiate PoET challenge on server
+      const challenge = await this.client.startAttentionChallenge();
+      this.challengeToken = challenge.challengeToken;
+      this.currentQuiz = challenge.quiz;
+      this.durationSeconds = challenge.durationSeconds || 15;
+      this.elapsedSeconds = 0;
+      this.watchProgress = 0;
+      this.selectedQuizOption = null;
+      this.quizError = null;
 
-    const durationSeconds = 6; // Fast proof-of-attention in staging/demo
-    let elapsed = 0;
+      this.currentStage = 'WATCHING';
+      this.updateContent();
 
-    this.watchTimer = setInterval(async () => {
-      elapsed += 0.5;
-      this.watchProgress = Math.min(100, Math.round((elapsed / durationSeconds) * 100));
+      this.runWatchTimer();
+    } catch (err: any) {
+      if (err.code === 'ACTIVE_ATTENTION_STREAM_IN_PROGRESS') {
+        this.rateLimitWarning = `⚠️ Concurrency Lock: Active attention stream in progress (${err.remainingSeconds || 15}s remaining). Please finish it before starting another.`;
+      } else {
+        this.rateLimitWarning = `⚠️ ${err.message || 'Failed to initiate attention challenge.'}`;
+      }
+      this.updateContent();
+    }
+  }
+
+  private runWatchTimer(): void {
+    if (this.watchTimer) clearInterval(this.watchTimer);
+
+    this.watchTimer = setInterval(() => {
+      // If user switched tabs, halt progress
+      if (this.isTabHidden) {
+        return;
+      }
+
+      this.elapsedSeconds += 0.5;
+      this.watchProgress = Math.min(100, Math.round((this.elapsedSeconds / this.durationSeconds) * 100));
 
       if (this.shadowRoot) {
         const bar = this.shadowRoot.getElementById('progress-bar');
@@ -242,52 +354,61 @@ export class GatewayModal {
 
         const timerLabel = this.shadowRoot.getElementById('timer-label');
         if (timerLabel) {
-          const remaining = Math.max(0, Math.ceil(durationSeconds - elapsed));
+          const remaining = Math.max(0, Math.ceil(this.durationSeconds - this.elapsedSeconds));
           timerLabel.innerText = `${remaining}s remaining`;
         }
       }
 
-      if (elapsed >= durationSeconds) {
+      if (this.elapsedSeconds >= this.durationSeconds) {
         clearInterval(this.watchTimer);
         this.watchTimer = null;
-        this.watchedVideos++;
+        // Transition to brand comprehension quiz
+        this.currentStage = 'QUIZ';
+        this.updateContent();
+      }
+    }, 500);
+  }
 
-        // Grant credits via API
-        try {
-          const reward = await this.client.grantAttentionReward(this.creditsPerWatch);
-          if (this.options.onCreditEarned) {
-            this.options.onCreditEarned({
-              credits: this.creditsPerWatch,
-              totalEarnedCredits: reward.earnedCredits,
-              transactionId: `tx_reward_${Date.now()}`,
-              timestamp: new Date().toISOString(),
-            });
-          }
-        } catch (err: any) {
-          console.error('[DigitPop SDK] Failed to grant reward:', err);
+  private async submitQuizAnswer(): Promise<void> {
+    if (this.selectedQuizOption === null || !this.challengeToken) return;
+
+    try {
+      const res = await this.client.verifyComprehension({
+        challengeToken: this.challengeToken,
+        selectedOptionIndex: this.selectedQuizOption,
+        clientTelemetry: {
+          tabHiddenCount: 0,
+          elapsedSeconds: this.elapsedSeconds,
+        },
+      });
+
+      if (res.verified) {
+        if (this.options.onCreditEarned) {
+          this.options.onCreditEarned({
+            credits: res.creditsEarned,
+            totalEarnedCredits: res.totalEarnedCredits,
+            transactionId: `tx_poet_${Date.now()}`,
+            timestamp: new Date().toISOString(),
+          });
         }
 
-        if (this.watchedVideos >= this.requiredVideos) {
-          this.currentStage = 'SUCCESS';
-          this.updateContent();
+        this.currentStage = 'SUCCESS';
+        this.updateContent();
 
-          const event: AccessGrantedEvent = {
+        if (this.options.onAccessGranted) {
+          this.options.onAccessGranted({
             accessType: 'VIDEO_ENGAGEMENT',
-            creditsEarned: this.creditsPerWatch * this.requiredVideos,
+            creditsEarned: res.creditsEarned,
             transactionId: `tx_access_${Date.now()}`,
             timestamp: new Date().toISOString(),
             userId: this.client.config.userId,
-          };
-
-          if (this.options.onAccessGranted) {
-            this.options.onAccessGranted(event);
-          }
-        } else {
-          // Play next video
-          this.startWatching();
+          });
         }
       }
-    }, 500);
+    } catch (err: any) {
+      this.quizError = err.message || 'Comprehension check failed.';
+      this.updateContent();
+    }
   }
 
   private async handleTokenRedemption(): Promise<void> {
@@ -389,6 +510,24 @@ export class GatewayModal {
       .dp-subtitle {
         font-size: 14px;
         color: #94a3b8;
+      }
+      .dp-alert-warning {
+        background: rgba(245, 158, 11, 0.15);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        color: #fbbf24;
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        margin-bottom: 16px;
+      }
+      .dp-alert-error {
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #f87171;
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        margin-bottom: 16px;
       }
       .dp-options-grid {
         display: grid;
@@ -547,6 +686,67 @@ export class GatewayModal {
         margin-top: 12px;
         font-size: 12px;
         color: #64748b;
+      }
+      .dp-quiz-container {
+        padding: 8px 16px 20px;
+      }
+      .dp-quiz-card {
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 14px;
+        padding: 24px;
+      }
+      .dp-quiz-question {
+        font-size: 16px;
+        font-weight: 600;
+        color: #fff;
+        margin-bottom: 18px;
+        line-height: 1.4;
+      }
+      .dp-quiz-options {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      .dp-quiz-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: rgba(30, 41, 59, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: border-color 0.15s, background 0.15s;
+      }
+      .dp-quiz-option:hover {
+        background: rgba(30, 41, 59, 0.8);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+      .dp-quiz-option-selected {
+        background: rgba(37, 99, 235, 0.2) !important;
+        border-color: #3b82f6 !important;
+      }
+      .dp-quiz-bullet {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        font-size: 12px;
+        font-weight: 700;
+        color: #cbd5e1;
+      }
+      .dp-quiz-option-selected .dp-quiz-bullet {
+        background: #2563eb;
+        color: #fff;
+      }
+      .dp-quiz-text {
+        font-size: 13px;
+        color: #e2e8f0;
       }
       .dp-success-container {
         text-align: center;

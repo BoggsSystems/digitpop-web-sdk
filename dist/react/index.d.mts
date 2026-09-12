@@ -1,5 +1,5 @@
 import React from 'react';
-import { a as DigitPopClient, W as WalletBalance, D as DigitPopConfig, O as OpenGatewayOptions } from '../DigitPopClient-0kWT_Tmt.mjs';
+import { a as DigitPopClient, W as WalletBalance, D as DigitPopConfig, O as OpenGatewayOptions } from '../DigitPopClient-DIASkMHd.mjs';
 
 interface DigitPopContextValue {
     client: DigitPopClient | null;

@@ -100,6 +100,32 @@ interface PublisherVerification {
     status: 'ACTIVE' | 'INACTIVE';
     cpmShareRate: number;
 }
+interface AttentionChallengeQuiz {
+    id: string;
+    questionText: string;
+    options: string[];
+    bonusTokens: number;
+}
+interface AttentionChallengeStartResponse {
+    success: boolean;
+    challengeToken: string;
+    durationSeconds: number;
+    startedAt: number;
+    quiz: AttentionChallengeQuiz;
+    code?: string;
+    message?: string;
+    remainingSeconds?: number;
+}
+interface AttentionChallengeVerifyResponse {
+    success: boolean;
+    verified: boolean;
+    creditsEarned: number;
+    totalEarnedCredits: number;
+    durationVerifiedSeconds: number;
+    publisherEarningsNetUsd: number;
+    message: string;
+    code?: string;
+}
 
 declare class ApiClient {
     private config;
@@ -133,6 +159,18 @@ declare class ApiClient {
         success: boolean;
         transactionId: string;
     }>;
+    /**
+     * Initiate a server-signed Proof of Elapsed Time (PoET) Attention Challenge
+     */
+    startAttentionChallenge(durationSeconds?: number): Promise<any>;
+    /**
+     * Submit Proof of Elapsed Time & Brand Comprehension Answer for verified reward
+     */
+    verifyComprehension(options: {
+        challengeToken: string;
+        selectedOptionIndex: number;
+        clientTelemetry?: any;
+    }): Promise<any>;
 }
 
 type WebSocketListener = (data: any) => void;
@@ -160,23 +198,32 @@ declare class GatewayModal {
     private hostElement;
     private shadowRoot;
     private currentStage;
-    private watchedVideos;
-    private requiredVideos;
-    private creditsPerWatch;
     private watchTimer;
     private watchProgress;
+    private durationSeconds;
+    private elapsedSeconds;
+    private isTabHidden;
+    private challengeToken;
+    private currentQuiz;
+    private selectedQuizOption;
+    private quizError;
+    private rateLimitWarning;
     constructor(client: DigitPopClient, options: OpenGatewayOptions);
     render(): void;
     private handleKeyDown;
+    private handleVisibilityChange;
     close(): void;
     private updateContent;
     private renderHeader;
     private renderBody;
     private renderWatchingStage;
+    private renderQuizStage;
     private renderSuccessStage;
     private renderFooter;
     private bindEvents;
     private startWatching;
+    private runWatchTimer;
+    private submitQuizAnswer;
     private handleTokenRedemption;
     private getStyles;
 }
@@ -214,9 +261,21 @@ declare class DigitPopClient {
         transactionId: string;
     }>;
     /**
+     * Start a Proof of Elapsed Time (PoET) Attention Challenge
+     */
+    startAttentionChallenge(durationSeconds?: number): Promise<any>;
+    /**
+     * Verify Brand Comprehension & Proof of Elapsed Time
+     */
+    verifyComprehension(options: {
+        challengeToken: string;
+        selectedOptionIndex: number;
+        clientTelemetry?: any;
+    }): Promise<any>;
+    /**
      * Cleanup SDK resources and open sockets
      */
     destroy(): void;
 }
 
-export { type AccessGrantedEvent as A, type DigitPopConfig as D, GatewayModal as G, type MonetizationOption as M, type OpenGatewayOptions as O, type PublisherVerification as P, type RewardCreditEvent as R, type TokenRedemptionConfig as T, type VideoEngagementConfig as V, type WalletBalance as W, DigitPopClient as a, ApiClient as b, type DigitPopTheme as c, type DirectPaymentConfig as d, type MonetizationOptionType as e, WebSocketClient as f };
+export { type AccessGrantedEvent as A, type DigitPopConfig as D, GatewayModal as G, type MonetizationOption as M, type OpenGatewayOptions as O, type PublisherVerification as P, type RewardCreditEvent as R, type TokenRedemptionConfig as T, type VideoEngagementConfig as V, type WalletBalance as W, DigitPopClient as a, ApiClient as b, type AttentionChallengeQuiz as c, type AttentionChallengeStartResponse as d, type AttentionChallengeVerifyResponse as e, type DigitPopTheme as f, type DirectPaymentConfig as g, type MonetizationOptionType as h, WebSocketClient as i };

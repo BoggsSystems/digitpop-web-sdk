@@ -114,3 +114,32 @@ export interface PublisherVerification {
   status: 'ACTIVE' | 'INACTIVE';
   cpmShareRate: number;
 }
+
+export interface AttentionChallengeQuiz {
+  id: string;
+  questionText: string;
+  options: string[];
+  bonusTokens: number;
+}
+
+export interface AttentionChallengeStartResponse {
+  success: boolean;
+  challengeToken: string;
+  durationSeconds: number;
+  startedAt: number;
+  quiz: AttentionChallengeQuiz;
+  code?: string;
+  message?: string;
+  remainingSeconds?: number;
+}
+
+export interface AttentionChallengeVerifyResponse {
+  success: boolean;
+  verified: boolean;
+  creditsEarned: number;
+  totalEarnedCredits: number;
+  durationVerifiedSeconds: number;
+  publisherEarningsNetUsd: number;
+  message: string;
+  code?: string;
+}

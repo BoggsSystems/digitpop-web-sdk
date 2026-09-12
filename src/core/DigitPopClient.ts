@@ -119,6 +119,24 @@ export class DigitPopClient {
   }
 
   /**
+   * Start a Proof of Elapsed Time (PoET) Attention Challenge
+   */
+  async startAttentionChallenge(durationSeconds?: number) {
+    return this.api.startAttentionChallenge(durationSeconds);
+  }
+
+  /**
+   * Verify Brand Comprehension & Proof of Elapsed Time
+   */
+  async verifyComprehension(options: {
+    challengeToken: string;
+    selectedOptionIndex: number;
+    clientTelemetry?: any;
+  }) {
+    return this.api.verifyComprehension(options);
+  }
+
+  /**
    * Cleanup SDK resources and open sockets
    */
   destroy(): void {
